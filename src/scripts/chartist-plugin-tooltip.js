@@ -58,52 +58,60 @@
             callback(e);
         });
       }
+      function startEvent(event) {
+          var $point = event.target;
+          var tooltipText = '';
 
-      on('mouseover', tooltipSelector, function (event) {
-        var $point = event.target;
-        var tooltipText = '';
+          var meta = $point.getAttribute('ct:meta') || '';
+          var value = $point.getAttribute('ct:value');
 
-        var meta = $point.getAttribute('ct:meta') || '';
-        var value = $point.getAttribute('ct:value');
-
-        if (options.tooltipFnc) {
-          tooltipText = options.tooltipFnc(meta, value);
-        } else {
-          if (meta) {
-            tooltipText += meta + '<br>';
+          if (options.tooltipFnc) {
+              tooltipText = options.tooltipFnc(meta, value);
           } else {
-            // For Pie Charts also take the labels into account
-            // Could add support for more charts here as well!
-            if (chart instanceof Chartist.Pie) {
-              var label = next($point, 'ct-label');
-              if (label.length > 0) {
-                tooltipText += text(label) + '<br>';
+              if (meta) {
+                  tooltipText += meta + '<br>';
+              } else {
+                  // For Pie Charts also take the labels into account
+                  // Could add support for more charts here as well!
+                  if (chart instanceof Chartist.Pie) {
+                      var label = next($point, 'ct-label');
+                      if (label.length > 0) {
+                          tooltipText += text(label) + '<br>';
+                      }
+                  }
               }
-            }
+
+              if (options.currency) {
+                  value = options.currency + value.replace(/(\d)(?=(\d{3})+(?:\.\d+)?$)/g, "$1,");
+              }
+              tooltipText += value;
           }
 
-          if (options.currency) {
-            value = options.currency + value.replace(/(\d)(?=(\d{3})+(?:\.\d+)?$)/g, "$1,");
-          }
-          tooltipText += value;
-        }
+          $toolTip.innerHTML = tooltipText;
+          setPosition(event);
+          show($toolTip);
 
-        $toolTip.innerHTML = tooltipText;
-        setPosition(event);
-        show($toolTip);
+          // Remember height and width to avoid wrong position in IE
+          height = $toolTip.offsetHeight;
+          width = $toolTip.offsetWidth;
+      }
 
-        // Remember height and width to avoid wrong position in IE
-        height = $toolTip.offsetHeight;
-        width = $toolTip.offsetWidth;
+      on('touchstart', tooltipSelector, startEvent );
+      on('mouseover', tooltipSelector, startEvent );
+
+      on('mouseout', tooltipSelector, function () { 
+        hide($toolTip);             
+      });
+      on('touchend', tooltipSelector, function () { 
+        setTimeout(function(){
+            hide($toolTip);             
+        },3000);
       });
 
-      on('mouseout', tooltipSelector, function () {
-        hide($toolTip);
+      on('mousemove', null, function (event) { 
+        setPosition(event); 
       });
-
-      on('mousemove', null, function (event) {
-        setPosition(event);
-      });
+         
 
       function setPosition(event) {
         // For some reasons, on FF, we can't rely on event.offsetX and event.offsetY,
